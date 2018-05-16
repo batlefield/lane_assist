@@ -10,10 +10,23 @@ using namespace std;
 using namespace cv;
 
 
-//processes cpatured image
+//processes captured image
 Mat process(Mat frame) {
+    Mat processed;
+    Size frameSize = frame.size();
 
-    return frame;
+
+    //warpamo perspektivo da dobimo cesto na sliki - tako izracunamo radij crt
+    Point2f inputQuad[] = {Point2f(315, 300), Point2f(435, 300), Point2f(760, 440), Point2f(0, 480)};
+    Point2f outputQuad[] = {Point2f(0, 0), Point2f(frameSize.width, 0), Point2f(frameSize.width, frameSize.height), Point2f(0, frameSize.height)};
+
+    Mat transMatrix = getPerspectiveTransform(inputQuad, outputQuad);
+
+    warpPerspective(frame, processed, transMatrix, frameSize);
+
+    
+
+    return processed;
 }
 
 int main(int argc, char **argv) {
@@ -45,9 +58,9 @@ int main(int argc, char **argv) {
         remap(frame, rectified, map1, map2, INTER_LINEAR);
         Mat detect;
         rectified.copyTo(detect);
-        process(detect);
-        rectified.push_back(detect);
+        Mat processed = process(detect);
         imshow("Camera", rectified);
+        imshow("Processed", processed);
 
         if(waitKey(33) >= 0) {
             break;
@@ -58,3 +71,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
