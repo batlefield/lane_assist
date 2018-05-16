@@ -1,0 +1,21 @@
+\documentclass[A4]{article}
+\usepackage{amsmath}
+\usepackage{listingsutf8}
+\lstset{literate={č}{{\v c}}1 {š}{{\v s}}1 {ž}{{\v z}}1}
+\lstset{basicstyle=\ttfamily, language=Octave}
+\usepackage[pdftex]{graphicx}
+\usepackage[slovene]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsfonts}
+
+\begin{document}
+ 
+ \title{Lane assist sistem z Raspberry Pi in OpenCV}
+ \author{Peter Matičič}
+ \maketitle
+
+ \section{Ideja projekta}
+ Ideja projekta je, da izdelam mali `embedded` sistem, ki se montira na vetrobransko steklo v osebnem avtomobilu in nam z pomočjo LED diod prikazuje kam moramo zaviti in s kolikšno jakostjo, da bomo na centru vozišča. V začetku razvoja bom delal na osebnem računalniku in obdeloval v naprej posnete posnetke vožnje po avtocesti. Sistem bo temeljil na spremljanju ločilnih črt med pasovi na avtocesti in uporabniku nakazoval spremebe smeri glede na sredino med obema črtama in sredino zajete slike - to pomeni da bo morala biti kamera v avtomobilu zmontirana na sredini vetrobranskega stekla. Po uspešnem delovanju programa na osebnem računalniku, bom sistem prenesel na Raspberry Pi in preizkusil delovanje, prav tako z uporabo testnih posnetkov. Če bo program dobro deloval tudi na RPi (tu se gre predvsem za hitrost delovanja) bom prešel na zajem iz kamere, dodal LED diode in naredil zaključen sistem, v primeru pa da program ne bo deloval dovolj hitro, bom pa poizkusil z kakšnimi naprednejšimi optimizacijami za boljše delovanje. Če se izkaže da program dovolj dobro deluje bom dodal nadgradnjo še za upoštevanje ovinkov - torej da sistem zazna ovinek in napove koliko moramo zaviti v njem. Kot sem omenil že v začetku, ta sistem bo deloval le na avtocesti, v primeru da bo sistem dovolj dobro deloval na RPi in bo ostalo dovolj časa za izvedbo, bom poizkusil dodati še delovanje na regionalnih cestah, ki so brez stranskih črt. V primeru da sistem sploh ne bo deloval na Raspberry Pi, oz. bo praktično povsem neuporaben, bom program napisal do te mere, da bo deloval na osebnem računalniku z vsemi funkcionalnostmi načrtovanega sistema.
+ 
+\end{document}
