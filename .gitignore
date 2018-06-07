@@ -8,3 +8,6 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 test-cut.avi
+v1.avi
+v2.avi
+v3.avi

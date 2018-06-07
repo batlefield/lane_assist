@@ -4,33 +4,92 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
 
 using namespace std;
 using namespace cv;
 
 
+Point2f upperLeft(260, 236);
+Point2f upperRight(376, 236);
+Point2f lowerRight(633, 348);
+Point2f lowerLeft(67, 353);
+
 //processes captured image
 Mat process(Mat frame) {
-    Mat processed;
+    Mat transformed, colorMask, sobelMask, finalMask;
     Size frameSize = frame.size();
 
 
     //warpamo perspektivo da dobimo cesto na sliki - tako izracunamo radij crt
-    Point2f inputQuad[] = {Point2f(315, 300), Point2f(435, 300), Point2f(760, 440), Point2f(0, 480)};
+    Point2f inputQuad[] = {upperLeft, upperRight, lowerRight, lowerLeft};
     Point2f outputQuad[] = {Point2f(0, 0), Point2f(frameSize.width, 0), Point2f(frameSize.width, frameSize.height), Point2f(0, frameSize.height)};
 
     Mat transMatrix = getPerspectiveTransform(inputQuad, outputQuad);
 
-    warpPerspective(frame, processed, transMatrix, frameSize);
+    warpPerspective(frame, transformed, transMatrix, frameSize);
 
-    
+    //ustvarimo barvno masko
+    inRange(transformed, Scalar(150, 150, 150), Scalar(255, 255, 255), colorMask);
 
-    return processed;
+    //ustvarimo masko odvodov
+    Sobel(transformed, sobelMask, colorMask.depth(), 1, 0);
+
+    //se znebimo malo motenj
+    erode(sobelMask, sobelMask, Mat(), Point(-1, -1), 1);
+    dilate(sobelMask, sobelMask, Mat(), Point(-1, -1), 5);
+
+    //sestavimo masko in jo thresholdamo
+    cvtColor(sobelMask, sobelMask, CV_BGR2GRAY);
+    bitwise_and(sobelMask, colorMask, finalMask);
+    threshold(finalMask, finalMask, 40, 255, THRESH_BINARY);
+
+
+    int width = finalMask.size().width;
+    int height = finalMask.size().height;
+
+    Point2i lanePoints[8];
+
+    int summed[8][width];
+    for(int i = 0; i < 8; i++) {
+        for(int j = 0; j < width; j++) {
+            Mat sub(finalMask, Rect(j, i * (height / 8), 1, height / 8));
+            summed[i][j] = countNonZero(sub);
+        }
+    }
+
+
+    for(int i = 0; i < 8; i++) {
+        float maxl = 0, maxr = 0;
+        int maxli = 0, maxri = width - 1;
+        for(int j = 0; j < width / 2; j++) {
+            float l = summed[i][j];
+            float r = summed[i][width - j - 1];
+            if(l > maxl) {
+                maxl = l;
+                maxli = j;
+            }
+            if(r > maxr) {
+                maxr = r;
+                maxri = width - j;
+            }
+        }
+        lanePoints[i] = Point2i(maxli, maxri);
+        //printf("%d, %d\n", maxli, maxri);
+    }
+
+
+    cvtColor(finalMask, finalMask, CV_GRAY2BGR);
+
+    for(int i = 0; i < 8; i++) {
+        int ch = (i * (height / 8)) + (height / 16);
+        circle(finalMask, Point2i(lanePoints[i].x, ch), 4, Scalar(0, 0, 255));
+        circle(finalMask, Point2i(lanePoints[i].y, ch), 4, Scalar(0, 0, 255));
+    }
+
+    return finalMask;
 }
 
 int main(int argc, char **argv) {
-    string calibration_file("../camera.yaml");
     VideoCapture camera;
     if(argc > 1) {
         //posnetek
@@ -38,35 +97,25 @@ int main(int argc, char **argv) {
     } else {
         //kamera
         camera = VideoCapture(0);
-        camera.set(CV_CAP_PROP_CONTRAST, 0.2);
     }
 
-    Mat frame, rectified, intrinsics, distortion, map1, map2;
+    Mat frame;
 
-    FileStorage fs(calibration_file, FileStorage::READ);
-    fs["intrinsics"] >> intrinsics;
-    fs["distortion"] >> distortion;
-
-    camera.read(frame);
-
-    Mat camera_matrix = getOptimalNewCameraMatrix(intrinsics, distortion, frame.size(), 1);
-
-    initUndistortRectifyMap(intrinsics, distortion, Mat(), camera_matrix, frame.size(), CV_16SC2, map1, map2);
 
     while(true) {
         camera.read(frame);
-        remap(frame, rectified, map1, map2, INTER_LINEAR);
         Mat detect;
-        rectified.copyTo(detect);
+        frame.copyTo(detect);
         Mat processed = process(detect);
-        imshow("Camera", rectified);
+        imshow("Camera", frame);
         imshow("Processed", processed);
 
-        if(waitKey(33) >= 0) {
+        int c = waitKey(-1);
+        if(c == (int)'q') {
             break;
         }
-    }
 
+    }
 
 
     return 0;
