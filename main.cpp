@@ -16,6 +16,10 @@ Point2f lowerLeft(67, 353);
 
 Point2i prevLanePoints[8];
 
+float carOffset = 0.0;
+int carCenter = 282;
+float pixelsPerMeter = 144.0;
+
 //processes captured image
 Mat process(Mat frame) {
     Mat transformed, colorMask, sobelMask, finalMask;
@@ -112,6 +116,15 @@ Mat process(Mat frame) {
         if(lanePoints[i - 1].x != 0 && lanePoints[i].x != 0) line(result, Point(lanePoints[i - 1].x, (i - 1) * (height / 8) + (height / 16)), Point(lanePoints[i].x, i * (height / 8) + (height / 16)), Scalar(255, 0, 0, 0), 20);
         if(lanePoints[i - 1].y != width - 1 && lanePoints[i].y != width - 1) line(result, Point(lanePoints[i - 1].y, (i - 1) * (height / 8) + (height / 16)), Point(lanePoints[i].y, i * (height / 8) + (height / 16)), Scalar(255, 0, 0, 0), 20);
     }
+
+    //printf("%d\n", (lanePoints[7].y - lanePoints[7].x));
+
+    if(lanePoints[7].x != 0 && lanePoints[7].y != width - 1) {
+        carOffset = lanePoints[7].x + (lanePoints[7].y - lanePoints[7].x) / 2 - carCenter;
+        carOffset /= pixelsPerMeter;
+    }
+    
+    printf("%f\n", carOffset);
 
     Mat warpedBack;
     warpPerspective(result, warpedBack, transMatrix, frameSize, WARP_INVERSE_MAP, BORDER_TRANSPARENT);
