@@ -4,6 +4,7 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <wiringPi.h>
 
 using namespace std;
 using namespace cv;
@@ -101,13 +102,13 @@ Mat process(Mat frame) {
         prevLanePoints[i] = lanePoints[1];
     }
 
-    cvtColor(finalMask, finalMask, CV_GRAY2BGR);
+    //cvtColor(finalMask, finalMask, CV_GRAY2BGR);
 
-    for (int i = 0; i < 8; i++) {
+    /*for (int i = 0; i < 8; i++) {
         int ch = (i * (height / 8)) + (height / 16);
         circle(finalMask, Point2i(lanePoints[i].x, ch), 4, Scalar(0, 0, 255));
         circle(finalMask, Point2i(lanePoints[i].y, ch), 4, Scalar(0, 0, 255));
-    }
+    }*/
 
     Mat result = Mat::zeros(finalMask.size(), frame.type());
 
@@ -123,7 +124,7 @@ Mat process(Mat frame) {
         carOffset = lanePoints[7].x + (lanePoints[7].y - lanePoints[7].x) / 2 - carCenter;
         carOffset /= pixelsPerMeter;
     }
-    
+
     printf("%f\n", carOffset);
 
     Mat warpedBack;
@@ -143,18 +144,50 @@ int main(int argc, char **argv) {
         camera = VideoCapture(0);
     }
 
+    wiringPiSetup();
+
+    pinMode(0, OUTPUT);
+    pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(12, OUTPUT);
+
     Mat frame;
 
 
     while (true) {
         camera.read(frame);
         Mat detect;
-        frame.copyTo(detect);
-        Mat processed = process(detect);
-        imshow("Camera", frame);
+        //frame.copyTo(detect);
+        Mat processed = process(frame);
+        //imshow("Camera", frame);
         imshow("Processed", processed);
 
-        int c = waitKey(44);
+
+	if(carOffset > 0.2) {
+	    digitalWrite(3, HIGH);
+	} else {
+	    digitalWrite(3, LOW);
+	}
+
+	if(carOffset > 0.5) {
+	    digitalWrite(12, HIGH);
+	} else {
+	    digitalWrite(12, LOW);
+	}
+
+	if(carOffset < -0.2) {
+	    digitalWrite(2, HIGH);
+	} else {
+	    digitalWrite(2, LOW);
+	}
+
+	if(carOffset < -0.5) {
+	    digitalWrite(0, HIGH);
+	} else {
+	    digitalWrite(0, LOW);
+	}
+
+        int c = waitKey(1);
         if (c == (int) 'q') {
             break;
         }
@@ -164,4 +197,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
